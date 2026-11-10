@@ -47,14 +47,24 @@ jobs:
           echo "version $version, publish: $publish"
 
       - name: Build installer
+        run: npx electron-builder --win --publish never
+
+      - name: Publish release
+        if: steps.plan.outputs.publish == 'always'
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: npx electron-builder --win --publish ${{ steps.plan.outputs.publish }}
+        run: |
+          gh release create "v${{ steps.plan.outputs.version }}" \
+            dist/AULA-F75-Setup.exe dist/*.blockmap dist/latest.yml \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "AULA F75 ${{ steps.plan.outputs.version }}" --generate-notes --latest
 
       - uses: actions/upload-artifact@v4
         with:
           name: AULA-F75-Setup-${{ steps.plan.outputs.version }}
           path: |
             dist/*.exe
+            dist/*.blockmap
             dist/latest.yml
           if-no-files-found: error
