@@ -1,0 +1,50 @@
+name: Update test
+
+# Eski sürüm numarasıyla derlenmiş bir kurulumun, yayınlanmış son sürümü
+# GitHub Releases'ten bulup indirdiğini doğrular.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - app/updater.js
+      - .github/workflows/update-test.yml
+      - .github/scripts/install-and-run.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build an old version
+        run: |
+          npm version 0.0.1 --no-git-tag-version
+          npx electron-builder --win --publish never
+
+      - name: Install and launch
+        run: .github/scripts/install-and-run.ps1
+
+      - name: Wait for the update to download
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'aula-f75-alternative-updater\pending'
+          $found = $null
+          foreach ($i in 1..60) {
+            $found = Get-ChildItem -Path $dir -Filter '*.exe' -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'temp-*' } | Select-Object -First 1
+            if ($found) { break }
+            Start-Sleep -Seconds 5
+          }
+          Write-Host "Updater cache:"
+          Get-ChildItem -Path (Split-Path $dir) -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)  $($_.Length)" }
+          if (-not $found) { throw 'No downloaded update found after 5 minutes' }
+          Write-Host "Update downloaded: $($found.Name) ($($found.Length) bytes)"
+          if (Test-Path (Join-Path $dir 'update-info.json')) { Get-Content (Join-Path $dir 'update-info.json') }

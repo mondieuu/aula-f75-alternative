@@ -51,6 +51,9 @@ jobs:
       - name: Build installer
         run: npx electron-builder --win --publish never
 
+      - name: Install and launch
+        run: .github/scripts/install-and-run.ps1
+
       - name: Publish release
         if: steps.plan.outputs.publish == 'always'
         shell: bash
