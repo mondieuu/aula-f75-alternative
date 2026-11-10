@@ -128,6 +128,18 @@
           <button data-v="mute"><b data-i18n="knob.mute"></b><span data-i18n="knob.muteD"></span></button>
           <button data-v="play"><b data-i18n="knob.play"></b><span data-i18n="knob.playD"></span></button>
         </div>
+        <div class="panel-head gap-top"><h2 data-i18n="knob.speed"></h2><span class="muted" data-i18n="knob.speedHelp"></span></div>
+        <div class="options four" id="knobSpeed"></div>
+        <div class="measure" id="knobMeasure">
+          <svg><use href="#i-knob"/></svg>
+          <div class="grow"><b data-i18n="knob.custom"></b><span class="muted" id="knobCustomText"></span></div>
+          <button id="knobMeasureBtn" class="btn" data-i18n="knob.customBtn"></button>
+        </div>
+        <div class="measure-live" id="knobLive" hidden>
+          <div class="live-dial" id="knobLiveDial"></div>
+          <div class="grow"><div class="live-count" id="knobLiveCount"></div><p class="muted" id="knobLiveText"></p></div>
+          <div class="btns"><button id="knobLiveReset" class="btn quiet" data-i18n="knob.m.reset"></button><button id="knobLiveCancel" class="btn" data-i18n="knob.m.cancel"></button><button id="knobLiveOk" class="btn primary" data-i18n="knob.m.ok"></button></div>
+        </div>
         <div class="foot">
           <p class="muted" id="knobNote"></p>
           <div class="btns"><button id="knobApply" class="btn primary" data-i18n="knob.write"></button></div>

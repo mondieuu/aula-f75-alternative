@@ -14,30 +14,64 @@ const KNOB_ROTATE = {
     volume: '9009bd302f0474e9800274eaf0e4a3f0d250d22d786ff6',
     track: '9009bd302f0474b5800274b6f0e4a3f0d250d22d786ff6',
     light: '900d15e4f0a37402302f0114f0a3a37408f0c242128c0f',
+    // Ölçüm: ses bloğu, kodlar 0x10 / 0x11 (ayrılmış, Windows yok sayar); uygulama tıkları sayar
+    measure: '9009bd302f047410800274' + '11' + 'f0e4a3f0d250d22d786ff6',
   },
 };
 // Basma: 0x4444'te 'mov a,#kod' (74 xx), ardından f0
 const KNOB_PRESS = { at: 0x4445, modes: { mute: 0xe2, play: 0xcd } };
 const hexBytes = (h) => h.match(/../g).map((x) => parseInt(x, 16));
+const same = (fw, at, bytes) => bytes.every((v, i) => fw[at + i] === v);
+
+// Hassasiyet: kaç tıkta bir işlem yapılacağı. 0x38AF'deki 11 baytlık olay denetimi,
+// kodun bittiği boş alandaki (0xEFC4) bir sayaca çağrıya dönüşür. Sayaç XRAM 0x0FF8'de,
+// son yön 0x0FF9'da (açılışta firmware tüm XRAM'i sıfırlar, bu adresleri başka kod kullanmaz).
+// Yön değişince sayaç sıfırlanır. 1 tık = fabrika kodu (yama yok).
+const KNOB_SPEED = {
+  at: 0x38af,
+  cave: 0xefc4,
+  caveSize: 50,
+  orig: hexBytes('302e1f202d1c205019c22e'),
+  hook: hexBytes('12efc4501d000000000000'),
+  nAt: 0x27,
+  code: (n) => hexBytes('302e2d202d2a205027c22e900ff9e0302f026401600be4a22f33f0e4900ff88004900ff8e004b4' +
+    n.toString(16).padStart(2, '0') + '004004e4f0d322f0c322'),
+  options: [1, 3, 6, 12],
+  max: 24,
+};
+
+function knobSpeed(fw) {
+  if (same(fw, KNOB_SPEED.at, KNOB_SPEED.orig) && fw.subarray(KNOB_SPEED.cave, KNOB_SPEED.cave + KNOB_SPEED.caveSize).every((v) => v === 0)) return 1;
+  if (!same(fw, KNOB_SPEED.at, KNOB_SPEED.hook)) return null;
+  const n = fw[KNOB_SPEED.cave + KNOB_SPEED.nAt];
+  return n >= 2 && n <= KNOB_SPEED.max && same(fw, KNOB_SPEED.cave, KNOB_SPEED.code(n)) ? n : null;
+}
 
 function knobState(fw) {
   const blk = fw.subarray(KNOB_ROTATE.at, KNOB_ROTATE.at + 23);
   const rotate = Object.keys(KNOB_ROTATE.modes).find((m) => hexBytes(KNOB_ROTATE.modes[m]).every((v, i) => v === blk[i])) || null;
   const ctx = fw[KNOB_PRESS.at - 1] === 0x74 && fw[KNOB_PRESS.at + 1] === 0xf0;
   const press = ctx ? Object.keys(KNOB_PRESS.modes).find((m) => KNOB_PRESS.modes[m] === fw[KNOB_PRESS.at]) || null : null;
-  return { rotate, press };
+  return { rotate, press, speed: knobSpeed(fw) };
 }
 
 function knobPatchable(fw) {
   if (fw.length !== ISP.FW_SIZE || fw[0] !== 0x02) return false;
   const st = knobState(fw);
-  return !!(st.rotate && st.press);
+  return !!(st.rotate && st.press && st.speed);
 }
 
-function applyKnob(fw, rotate, press) {
+function applyKnob(fw, rotate, press, speed = 1) {
   const out = new Uint8Array(fw);
   out.set(hexBytes(KNOB_ROTATE.modes[rotate]), KNOB_ROTATE.at);
   out[KNOB_PRESS.at] = KNOB_PRESS.modes[press];
+  if (speed > 1) {
+    out.set(KNOB_SPEED.hook, KNOB_SPEED.at);
+    out.set(KNOB_SPEED.code(speed), KNOB_SPEED.cave);
+  } else {
+    out.set(KNOB_SPEED.orig, KNOB_SPEED.at);
+    out.fill(0, KNOB_SPEED.cave, KNOB_SPEED.cave + KNOB_SPEED.caveSize);
+  }
   return out;
 }
 

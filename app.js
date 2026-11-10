@@ -402,18 +402,38 @@ function bindKeys() {
 
 // ---------- tekerlek ----------
 const knobName = (v) => t('knob.' + v);
+const knobEvery = (n) => (n > 1 ? t('knob.everyN', n) : t('knob.every1'));
+const knobSummary = (k) => knobName(k.rotate) + ' · ' + knobName(k.press) + ((k.speed || 1) > 1 ? ' · ' + knobEvery(k.speed) : '');
+// Hassasiyet resmi: tekerlek, tam turda 24 tık; N. tıkta işlem olur (12 = yarım tur)
+const DIAL_TICKS = 24;
+function dialSvg(n) {
+  const step = (2 * Math.PI) / DIAL_TICKS;
+  let s = '<svg class="dial" viewBox="0 0 48 48" aria-hidden="true"><circle class="dial-body" cx="24" cy="24" r="12"/><path class="dial-ptr" d="M24 24V14"/>';
+  if (n > 1) s += '<path class="dial-arc" d="M24 4.5A19.5 19.5 0 0 1 ' + (24 + 19.5 * Math.sin(n * step)).toFixed(2) + ' ' + (24 - 19.5 * Math.cos(n * step)).toFixed(2) + '"/>';
+  for (let i = 0; i < DIAL_TICKS; i++) {
+    const a = i * step, r1 = i === n ? 16 : 17.5, r2 = i === n ? 23 : 20.5;
+    const p = (r) => (24 + r * Math.sin(a)).toFixed(2) + ' ' + (24 - r * Math.cos(a)).toFixed(2);
+    s += '<path class="' + (i === n ? 'tick hit' : i > 0 && i < n ? 'tick on' : 'tick') + '" d="M' + p(r1) + 'L' + p(r2) + '"/>';
+  }
+  return s + '</svg>';
+}
+const knobDefaultSpeed = (rotate) => (rotate === 'track' ? 12 : 1);
 const KNOB_STEPS = ['enter', 'read', 'write', 'boot'];
 function renderKnob() {
   if (!S.knobSel) S.knobSel = { ...(S.knob || { rotate: 'volume', press: 'mute' }) };
+  if (S.knobSel.rotate === 'measure') S.knobSel = { rotate: 'track', press: S.knobSel.press, speed: 12 };
+  if (!S.knobSel.speed) S.knobSel.speed = S.knob ? 1 : knobDefaultSpeed(S.knobSel.rotate);
   $$('#knobRotate button').forEach((b) => { b.classList.toggle('on', b.dataset.v === S.knobSel.rotate); b.disabled = !!S.knobRun; });
   $$('#knobPress button').forEach((b) => { b.classList.toggle('on', b.dataset.v === S.knobSel.press); b.disabled = !!S.knobRun; });
-  $('#knobNow').textContent = S.knob ? t('knob.on', knobName(S.knob.rotate), knobName(S.knob.press)) : t('knob.unknown');
-  const same = S.knob && S.knob.rotate === S.knobSel.rotate && S.knob.press === S.knobSel.press;
+  $$('#knobSpeed button').forEach((b) => { b.classList.toggle('on', +b.dataset.v === S.knobSel.speed); b.disabled = !!S.knobRun; b.querySelector('b').textContent = knobEvery(+b.dataset.v); b.querySelector('span').textContent = t('knob.speedD' + b.dataset.v); });
+  $('#knobNow').textContent = S.knob ? t('knob.on', knobSummary(S.knob)) : t('knob.unknown');
+  const same = S.knob && S.knob.rotate === S.knobSel.rotate && S.knob.press === S.knobSel.press && (S.knob.speed || 1) === S.knobSel.speed;
   const wired = S.t && S.t.kind === 'wired';
-  $('#knobApply').disabled = S.busy || !!S.knobRun || same || !wired;
+  $('#knobApply').disabled = S.busy || !!S.knobRun || !!S.measure || same || !wired;
   $('#knobNote').textContent = S.knobRun ? t('knob.busy') : !wired ? t('knob.needCable') : same ? t('knob.same') : t('knob.ready');
   const fn = S.keymaps[1] && S.keymaps[1].subarray(84 * 4, 84 * 4 + 4);
   $('#knobFn').textContent = fn ? (label(fn) || t('knob.fnUnset')) : t('knob.fnWired');
+  renderMeasure();
 }
 // Adım listesi: her adım bekliyor, sürüyor (run), bitti (done) ya da hata (err)
 function knobStep(step, state, done, total) {
@@ -471,73 +491,155 @@ async function waitKeyboard(ms) {
   while (!S.config && Date.now() - t0 < ms) { await autoConnect().catch(() => {}); if (!S.config) await wait(1000); }
   return !!S.config;
 }
-function knobEnd() {
+function knobEnd(ok) {
+  const done = S.knobRun && S.knobRun.resolve;
   S.knobRun = null;
   S.busy = false;
   document.body.classList.remove('knob-run');
   render();
+  if (done) done(!!ok);
 }
 // Yükleyiciye bağlandıktan sonrası tek akış: oku, yedekle, yaz, doğrula, yeniden başlat
 async function knobWrite(d) {
   const sel = S.knobRun;
   let fw = null;
   let step = 'read';
+  let ok = false;
   try {
     await ispSession(d);
     knobResult('');
     knobStep('read', 'run');
     fw = await S.isp.readFirmware((i, n) => knobStep('read', 'run', i, n));
     if (!knobPatchable(fw)) throw new Error(t('knob.unknownFw'));
-    S.knobBackup = fw;
+    if (!S.knobBackup) S.knobBackup = fw;
     try { if (!localStorage.getItem('aulaFwOrig')) localStorage.setItem('aulaFwOrig', b64(fw)); } catch { /* yer yok */ }
     step = 'write';
     knobStep('write', 'run');
-    const img = applyKnob(fw, sel.rotate, sel.press);
+    const img = applyKnob(fw, sel.rotate, sel.press, sel.speed);
     if (!img.every((v, i) => v === fw[i])) await S.isp.writeFirmware(img, (i, n) => knobStep('write', 'run', i, n));
-    saveKnob({ rotate: sel.rotate, press: sel.press });
+    saveKnob({ rotate: sel.rotate, press: sel.press, speed: sel.speed });
     step = 'boot';
     knobStep('boot', 'run');
     await ispFinish();
-    const ok = await waitKeyboard(10000);
+    ok = await waitKeyboard(10000);
     $$('#knobSteps li').forEach((li) => { li.className = 'done'; li.querySelector('em').textContent = ''; });
-    knobResult(t(ok ? 'knob.doneTry' : 'knob.doneLater', knobName(sel.rotate), knobName(sel.press)), 'ok', { dl: true });
+    if (sel.quiet) knobResult('');
+    else knobResult(t(ok ? 'knob.doneTry' : 'knob.doneLater', knobSummary(sel)), 'ok', { dl: true });
   } catch (e) {
     console.error(e);
     knobStep(step, 'err');
     let msg = t('err', e.message);
     if (S.isp && step === 'write' && fw) {
       // Doğrulama tutmadı: okunan orijinali bir kez geri yaz
-      try { await S.isp.writeFirmware(fw); msg = t('knob.rolledBack'); } catch (e2) { console.error(e2); knobResult(t('knob.stuck'), 'err', { dl: true }); knobEnd(); return; }
+      try { await S.isp.writeFirmware(fw); msg = t('knob.rolledBack'); } catch (e2) { console.error(e2); knobResult(t('knob.stuck'), 'err', { dl: true }); knobEnd(false); return; }
     }
     if (S.isp) { await ispFinish().catch(() => {}); await waitKeyboard(10000); }
     knobResult(msg, 'err', { dl: step !== 'read' });
   } finally {
-    if (S.knobRun) knobEnd();
+    if (S.knobRun) knobEnd(ok);
   }
 }
-function bindKnob() {
-  $$('#knobRotate button').forEach((b) => (b.onclick = () => { S.knobSel.rotate = b.dataset.v; knobResult(''); renderKnob(); }));
-  $$('#knobPress button').forEach((b) => (b.onclick = () => { S.knobSel.press = b.dataset.v; knobResult(''); renderKnob(); }));
-  $('#knobApply').onclick = async () => {
-    if (S.busy || S.knobRun) return;
+// Tekerlek ayarını firmware'e yazar; bitince true/false ile çözülür
+function knobFlash(target, quiet = false) {
+  return new Promise((resolve) => {
     S.busy = true;
-    S.knobRun = { ...S.knobSel };
-    S.knobBackup = null;
+    S.knobRun = { rotate: target.rotate, press: target.press, speed: target.speed || 1, quiet, resolve };
     document.body.classList.add('knob-run');
     knobResult('');
     knobStep('enter', 'run');
-    renderKnob();
-    try {
-      const d = await enterIspFromKeyboard();
+    render();
+    enterIspFromKeyboard().then((d) => {
       if (d) return knobWrite(d);
       // Tarayıcıda yükleyici bir kez listeden seçilir (masaüstü uygulamasında gerekmez)
       knobResult(t('knob.pickHelp'), '', { pick: true });
-    } catch (e) {
+    }).catch((e) => {
       knobStep('enter', 'err');
       knobResult(t('err', e.message), 'err');
-      knobEnd();
-    }
-  };
+      knobEnd(false);
+    });
+  });
+}
+
+// ---------- çevirerek ayarlama ----------
+// Klavyeye geçici "ölçüm" modu yazılır: her tık, Windows'un yok saydığı bir tüketici kodu
+// (0x10 sağ, 0x11 sol) gönderir. Uygulama bunları sayar, "Bu kadar" ile sayı hassasiyet olur.
+const MEASURE_CW = 0x10, MEASURE_CCW = 0x11;
+function onMeasureReport(e) {
+  const m = S.measure;
+  if (!m || m.phase !== 'turn' || e.data.byteLength < 2) return;
+  const code = e.data.getUint16(0, true);
+  if (code === MEASURE_CW) m.cw++;
+  else if (code === MEASURE_CCW) m.ccw++;
+  else return;
+  renderMeasure();
+}
+const measureCount = (m) => Math.abs(m.cw - m.ccw);
+function measureListen(on) {
+  const dev = S.t && S.t.device;
+  if (on && dev) { dev.addEventListener('inputreport', onMeasureReport); S.measure.dev = dev; }
+  if (!on && S.measure && S.measure.dev) { S.measure.dev.removeEventListener('inputreport', onMeasureReport); S.measure.dev = null; }
+}
+function renderMeasure() {
+  const m = S.measure;
+  const wired = S.t && S.t.kind === 'wired';
+  const custom = !KNOB_SPEED.options.includes(S.knobSel.speed);
+  $('#knobCustomText').textContent = custom ? t('knob.customNow', S.knobSel.speed) : t('knob.customHelp');
+  $('#knobMeasureBtn').disabled = !!m || S.busy || !!S.knobRun || !wired;
+  $('#knobMeasure').classList.toggle('on', custom);
+  $('#knobLive').hidden = !m || m.phase !== 'turn';
+  if (!m || m.phase !== 'turn') return;
+  const n = measureCount(m);
+  $('#knobLiveDial').innerHTML = dialSvg(Math.min(n, KNOB_SPEED.max));
+  $('#knobLiveCount').textContent = t('knob.m.count', n);
+  $('#knobLiveText').textContent = n === 0 ? t('knob.m.turn') : n > KNOB_SPEED.max ? t('knob.m.max', KNOB_SPEED.max) : t('knob.m.more');
+  $('#knobLiveOk').disabled = n === 0;
+}
+async function measureStart() {
+  if (S.busy || S.knobRun || S.measure) return;
+  const prev = S.knob && S.knob.rotate !== 'measure' ? { ...S.knob } : { ...S.knobSel };
+  S.measure = { phase: 'prep', prev, cw: 0, ccw: 0 };
+  renderMeasure();
+  const ok = await knobFlash({ rotate: 'measure', press: S.knobSel.press, speed: 1 }, true);
+  if (!ok || !S.t || S.t.kind !== 'wired') {
+    S.measure = null;
+    renderMeasure();
+    if (ok) knobResult(t('knob.m.lost'), 'err');
+    return;
+  }
+  S.measure.phase = 'turn';
+  measureListen(true);
+  renderMeasure();
+  $('#knobLive').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+async function measureEnd(accept) {
+  const m = S.measure;
+  if (!m || m.phase !== 'turn') return;
+  const n = Math.min(measureCount(m), KNOB_SPEED.max);
+  measureListen(false);
+  m.phase = 'save';
+  renderMeasure();
+  let target = m.prev;
+  if (accept && n > 0) {
+    S.knobSel.speed = n;
+    S.knobSpeedPicked = true;
+    target = { ...S.knobSel };
+  }
+  await knobFlash(target);
+  S.measure = null;
+  render();
+}
+
+function bindKnob() {
+  // Parça atlamada varsayılan yarım tur (12 tık); ses ve ışıkta her tık. Hassasiyet elle seçildiyse dokunulmaz.
+  $$('#knobRotate button').forEach((b) => (b.onclick = () => { S.knobSel.rotate = b.dataset.v; if (!S.knobSpeedPicked) S.knobSel.speed = knobDefaultSpeed(b.dataset.v); knobResult(''); renderKnob(); }));
+  $$('#knobPress button').forEach((b) => (b.onclick = () => { S.knobSel.press = b.dataset.v; knobResult(''); renderKnob(); }));
+  $('#knobSpeed').innerHTML = KNOB_SPEED.options.map((n) => '<button data-v="' + n + '">' + dialSvg(n) + '<b></b><span></span></button>').join('');
+  $$('#knobSpeed button').forEach((b) => (b.onclick = () => { S.knobSel.speed = +b.dataset.v; S.knobSpeedPicked = true; knobResult(''); renderKnob(); }));
+  $('#knobApply').onclick = () => { if (!S.busy && !S.knobRun && !S.measure) knobFlash({ ...S.knobSel }); };
+  $('#knobMeasureBtn').onclick = () => measureStart();
+  $('#knobLiveOk').onclick = () => measureEnd(true);
+  $('#knobLiveCancel').onclick = () => measureEnd(false);
+  $('#knobLiveReset').onclick = () => { if (S.measure) { S.measure.cw = 0; S.measure.ccw = 0; renderMeasure(); } };
   $('#knobPick').onclick = () => {
     requestIsp().then((d) => (d ? knobWrite(d) : null)).catch((e) => knobResult(t('err', e.message), 'err', { pick: true }));
   };
@@ -643,7 +745,7 @@ async function fwOpen(d) {
   S.fwSaved = false;
   const st = knobState(S.fw);
   const known = knobPatchable(S.fw);
-  $('#fwInfo').textContent = known ? t('fw.known', knobName(st.rotate), knobName(st.press)) : t('fw.unknown');
+  $('#fwInfo').textContent = known ? t('fw.known', knobSummary(st)) : t('fw.unknown');
   if (known) saveKnob(st);
   fwMsg(t('fw.read'), 'ok');
 }

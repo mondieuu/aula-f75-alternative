@@ -26,7 +26,7 @@ The official AULA software is a 2.6 MB Windows program that runs as administrato
 | **Lighting** | All 15 effects plus Off, brightness, speed, color or multicolor. The on-screen keyboard plays a live preview of the selected effect, and keys you press light up on screen. |
 | **Per-key colors** | Paint keys with a brush, ten preset colors or any custom color. Each key shows its LED color as a glow and a small dot. |
 | **Key remapping** | Four layers (Normal, Fn, Fn2, Tap). One searchable list for keys, shortcuts with Ctrl/Shift/Alt/Win, media, mouse buttons, lighting controls and lock functions. |
-| **Knob** | Choose what turning and pressing the knob does: **volume**, **lighting brightness** or **track skip**, and mute or play/pause. Fn + press can be assigned to anything. |
+| **Knob** | Choose what turning and pressing the knob does: **volume**, **lighting brightness** or **track skip**, and mute or play/pause. Fn + press can be assigned to anything. Sensitivity: act every 1, 3, 6 or 12 clicks (half a turn), or set it by turning the knob. |
 | **Battery** | Live percentage and charging state in 2.4G mode. |
 | **Settings** | Tap layer, sleep timer, debounce, factory reset. |
 | **Backup** | Save every setting to a file and load it back. |
@@ -82,6 +82,7 @@ Knob rotation is hard-wired in the keyboard firmware: no key code you assign can
 
 - **Volume** is the factory behavior.
 - **Track** changes the consumer codes the knob sends to next / previous track.
+- **Sensitivity** adds a small click counter in free flash space (0xEFC4): the knob acts once every N clicks and the count restarts when you change direction. **Set by turning** writes a temporary measuring mode where each click sends a reserved code Windows ignores, so the app can count clicks while music and volume stay untouched, then writes the measured number.
 - **Lighting** makes the knob call the same brightness routine that Fn + ↑ / ↓ uses.
 
 It is one click: the app switches the keyboard to its bootloader, reads and backs up the current firmware, writes and verifies the patch, then restarts the keyboard and reconnects (about 10 seconds), showing each step as it goes. The patch is only offered when the firmware is recognized (AULA F75 V11). The written data is read back and compared before the keyboard is allowed to start it. If anything does not match, the keyboard stays in bootloader mode and you can write the original firmware back from the Firmware page. The bootloader itself is never written.
@@ -123,7 +124,7 @@ AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’
 - **Işık:** 15 efekt ve kapalı, parlaklık, hız, renk ya da renkli mod. Ekrandaki klavye seçili efekti canlı oynatıyor; bastığın tuşlar ekranda da yanıyor.
 - **Tuş tuş renk:** Fırça, on hazır renk ya da istediğin renk.
 - **Tuş atama:** Dört katman (Normal, Fn, Fn2, Tap) ve tek bir aranabilir işlev listesi.
-- **Tekerlek:** Çevirme **ses**, **ışık parlaklığı** ya da **şarkı atlama**; basma sessiz ya da oynat/duraklat. Fn + basma istediğin işleve atanabiliyor. Tek tıkla yedek alınır, yazılır, doğrulanır ve klavye yeniden başlar (yaklaşık 10 saniye); her adım ekranda görünür.
+- **Tekerlek:** Çevirme **ses**, **ışık parlaklığı** ya da **şarkı atlama**; basma sessiz ya da oynat/duraklat. Fn + basma istediğin işleve atanabiliyor. Tek tıkla yedek alınır, yazılır, doğrulanır ve klavye yeniden başlar (yaklaşık 10 saniye); her adım ekranda görünür. Hassasiyet: her tıkta, 3, 6 ya da 12 tıkta bir (yarım tur); ya da tekerleği çevirerek ölçüp ayarlayabilirsin.
 - **Pil:** 2.4G modunda canlı yüzde ve şarj durumu.
 - **Ayarlar, yedek, firmware:** Tap, uyku, debounce, fabrika ayarları; ayar dosyası; firmware yedekleme ve geri yükleme.
 - **Görünüm:** Açık ve koyu tema; Türkçe ve İngilizce, Türkçe Q ve ABD tuş başlıklarıyla.

@@ -1,7 +1,7 @@
 {
   "name": "aula-f75-alternative",
   "productName": "AULA F75",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Lightweight open-source alternative app for the AULA F75 keyboard: lighting, key remapping, knob modes, battery and firmware tools over WebHID",
   "main": "app/main.js",
   "private": true,
