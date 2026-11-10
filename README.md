@@ -50,7 +50,9 @@ The official AULA software is a 2.6 MB Windows program that runs as administrato
 
 ### Getting started
 
-**Desktop app** (needs [Node.js](https://nodejs.org); tested on Windows, built on Electron so macOS and Linux should work too):
+**Windows:** download [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) and run it. It installs for your user only (no administrator rights) and adds a desktop shortcut. The installed app checks this repository's [releases](https://github.com/mondieuu/aula-f75-alternative/releases) for a newer version, downloads it in the background and asks before restarting. The installer is not code-signed, so Windows SmartScreen may show a warning: choose **More info → Run anyway**.
+
+**From source** (needs [Node.js](https://nodejs.org); tested on Windows, built on Electron so macOS and Linux should work too):
 
 ```bash
 git clone https://github.com/mondieuu/aula-f75-alternative.git
@@ -88,7 +90,7 @@ The patch is only offered when the firmware is recognized (AULA F75 V11). The wr
 
 ### Privacy and resources
 
-- No network access, no analytics, no accounts.
+- No analytics, no accounts. The only network request is the installed Windows app checking GitHub Releases for updates; running from source or in a browser makes none.
 - Plain HTML, CSS and JavaScript. No framework and no build step.
 - The effect preview is one canvas capped at 30 fps and stops when the page is hidden or the effect is static.
 
@@ -114,7 +116,7 @@ This project is not affiliated with, endorsed by or supported by AULA. “AULA�
 
 ## Türkçe
 
-AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’lık bir Windows programı. Bu uygulama aynı işi tek bir pencereden yapıyor: sisteme kurulacak bir şey yok, arka planda çalışan bir şey yok, hiçbir yere veri gitmiyor.
+AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’lık bir Windows programı. Bu uygulama aynı işi tek bir pencereden yapıyor: sisteme kurulacak bir şey yok, arka planda çalışan bir şey yok, hiçbir yere veri gitmiyor (kurulu Windows uygulaması yalnızca güncelleme için GitHub’a bakar).
 
 ### Özellikler
 
@@ -127,6 +129,12 @@ AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’
 - **Görünüm:** Açık ve koyu tema; Türkçe ve İngilizce, Türkçe Q ve ABD tuş başlıklarıyla.
 
 ### Başlatma
+
+**Windows:** [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) dosyasını indirip çalıştırın. Yönetici izni istemeden kurulur ve masaüstüne kısayol ekler. Kurulu uygulama yeni sürümleri bu deponun [release sayfasından](https://github.com/mondieuu/aula-f75-alternative/releases) kendisi denetler, arka planda indirir ve yeniden başlatmadan önce sorar. Kurulum dosyası imzalı olmadığı için Windows SmartScreen uyarı gösterebilir: **Ek bilgi → Yine de çalıştır**.
+
+Yeni sürüm yayınlamak için `package.json` içindeki `version` değerini artırıp `main` dalına göndermek yeterli; GitHub Actions kurulum dosyasını derleyip release olarak yayınlar.
+
+**Kaynaktan:**
 
 ```bash
 git clone https://github.com/mondieuu/aula-f75-alternative.git
