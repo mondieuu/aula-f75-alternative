@@ -46,8 +46,7 @@
       {
         "provider": "github",
         "owner": "mondieuu",
-        "repo": "aula-f75-alternative",
-        "releaseType": "release"
+        "repo": "aula-f75-alternative"
       }
     ]
   }
