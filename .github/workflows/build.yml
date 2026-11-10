@@ -39,7 +39,9 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           publish=never
           if [ "$GITHUB_EVENT_NAME" != "pull_request" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            if ! gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # Release yoksa ya da kurulum dosyaları eksikse yayınla
+            assets=$(gh release view "v$version" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null || true)
+            if ! echo "$assets" | grep -qx 'latest.yml'; then
               publish=always
             fi
           fi
@@ -55,10 +57,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${{ steps.plan.outputs.version }}" \
-            dist/AULA-F75-Setup.exe dist/*.blockmap dist/latest.yml \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "AULA F75 ${{ steps.plan.outputs.version }}" --generate-notes --latest
+          tag="v${{ steps.plan.outputs.version }}"
+          # latest.yml en sona: güncelleme denetimi exe yüklenmeden yeni sürümü görmesin
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/AULA-F75-Setup.exe dist/*.blockmap --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" dist/AULA-F75-Setup.exe dist/*.blockmap \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "AULA F75 ${{ steps.plan.outputs.version }}" --generate-notes --latest
+          fi
+          gh release upload "$tag" dist/latest.yml --repo "$GITHUB_REPOSITORY" --clobber
 
       - uses: actions/upload-artifact@v4
         with:
