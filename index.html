@@ -150,7 +150,7 @@
     </section>
 
     <section id="pSettings" class="page" hidden>
-      <div class="panel list">
+      <div class="panel list kb">
         <div class="item">
           <div class="item-text"><h2 data-i18n="set.tap"></h2><p class="muted" data-i18n="set.tapHelp"></p></div>
           <label class="switch"><input id="tapOn" type="checkbox" aria-label="Tap"></label>
@@ -168,14 +168,18 @@
           <div class="ctl-row"><input id="debounce" type="range" min="0" max="4"><output id="debounceVal"></output></div>
         </div>
       </div>
-      <div class="panel">
+      <div class="panel kb">
         <h2 data-i18n="set.device"></h2>
         <dl class="facts"><dt data-i18n="set.model"></dt><dd>AULA F75</dd><dt data-i18n="set.link"></dt><dd id="infoLink"></dd><dt data-i18n="set.id"></dt><dd id="infoId" class="mono"></dd><dt data-i18n="bat.title"></dt><dd id="infoBat"></dd>
           <dt>Firmware</dt><dd>V11.0.0 <span class="muted" data-i18n="set.fwNote"></span></dd></dl>
       </div>
-      <div class="panel bar">
+      <div class="panel bar kb">
         <div class="grow"><h2 data-i18n="set.factory"></h2><p class="muted" data-i18n="set.factoryHelp"></p></div>
         <button id="defaults" class="btn danger" data-i18n="set.reset"></button>
+      </div>
+      <div class="panel bar" id="updPanel" hidden>
+        <div class="grow"><h2 data-i18n="upd.title"></h2><p class="muted" id="updText"></p></div>
+        <button id="updAction" class="btn"></button>
       </div>
     </section>
 

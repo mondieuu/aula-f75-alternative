@@ -50,7 +50,7 @@ The official AULA software is a 2.6 MB Windows program that runs as administrato
 
 ### Getting started
 
-**Windows:** download [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) and run it. It installs for your user only (no administrator rights) and adds a desktop shortcut. The installed app checks this repository's [releases](https://github.com/mondieuu/aula-f75-alternative/releases) for a newer version, downloads it in the background and asks before restarting. The installer is not code-signed, so Windows SmartScreen may show a warning: choose **More info → Run anyway**.
+**Windows:** download [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) and run it. It installs for your user only (no administrator rights) and adds a desktop shortcut. The installed app checks this repository's [releases](https://github.com/mondieuu/aula-f75-alternative/releases) for a newer version, downloads it in the background and asks before restarting. You can also check by hand, follow the download and restart from **Settings → App update**. The installer is not code-signed, so Windows SmartScreen may show a warning: choose **More info → Run anyway**.
 
 **From source** (needs [Node.js](https://nodejs.org); tested on Windows, built on Electron so macOS and Linux should work too):
 
@@ -90,7 +90,7 @@ It is one click: the app switches the keyboard to its bootloader, reads and back
 
 ### Privacy and resources
 
-- No analytics, no accounts. The only network request is the installed Windows app checking GitHub Releases for updates; running from source or in a browser makes none.
+- No analytics, no accounts. The only network request is the update check against GitHub Releases: automatic in the installed Windows app, only when you press **Check for updates** when running from source, and never in a browser.
 - Plain HTML, CSS and JavaScript. No framework and no build step.
 - The effect preview is one canvas capped at 30 fps and stops when the page is hidden or the effect is static.
 
@@ -130,7 +130,7 @@ AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’
 
 ### Başlatma
 
-**Windows:** [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) dosyasını indirip çalıştırın. Yönetici izni istemeden kurulur ve masaüstüne kısayol ekler. Kurulu uygulama yeni sürümleri bu deponun [release sayfasından](https://github.com/mondieuu/aula-f75-alternative/releases) kendisi denetler, arka planda indirir ve yeniden başlatmadan önce sorar. Kurulum dosyası imzalı olmadığı için Windows SmartScreen uyarı gösterebilir: **Ek bilgi → Yine de çalıştır**.
+**Windows:** [AULA-F75-Setup.exe](https://github.com/mondieuu/aula-f75-alternative/releases/latest/download/AULA-F75-Setup.exe) dosyasını indirip çalıştırın. Yönetici izni istemeden kurulur ve masaüstüne kısayol ekler. Kurulu uygulama yeni sürümleri bu deponun [release sayfasından](https://github.com/mondieuu/aula-f75-alternative/releases) kendisi denetler, arka planda indirir ve yeniden başlatmadan önce sorar. **Ayarlar → Uygulama güncellemesi** bölümünden elle denetleyip indirmeyi izleyebilir ve yeniden başlatabilirsiniz. Kurulum dosyası imzalı olmadığı için Windows SmartScreen uyarı gösterebilir: **Ek bilgi → Yine de çalıştır**.
 
 Yeni sürüm yayınlamak için `package.json` içindeki `version` değerini artırıp `main` dalına göndermek yeterli; GitHub Actions kurulum dosyasını derleyip release olarak yayınlar.
 

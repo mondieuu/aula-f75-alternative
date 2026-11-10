@@ -44,7 +44,7 @@ if (!app.requestSingleInstanceLock()) {
       backgroundColor: nativeTheme.shouldUseDarkColors ? '#141415' : '#f6f6f7',
       autoHideMenuBar: true,
       show: false,
-      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
+      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false, preload: path.join(__dirname, 'preload.js') },
     });
     win.setMenu(null);
     win.once('ready-to-show', () => win.show());

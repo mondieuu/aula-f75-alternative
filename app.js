@@ -685,6 +685,42 @@ function bindFirmware() {
   });
 }
 
+// ---------- uygulama güncellemesi (yalnızca masaüstü uygulamasında) ----------
+function renderUpdate() {
+  const u = S.upd;
+  $('#updPanel').hidden = !u;
+  if (!u) return;
+  const btn = $('#updAction');
+  const firmwareBusy = !!(S.knobRun || S.isp || S.ispPending);
+  const text = {
+    idle: t(u.packaged ? 'upd.idleAuto' : 'upd.idle', u.version),
+    checking: t('upd.checking'),
+    none: t('upd.none', u.version),
+    available: t('upd.available', u.latest, u.version),
+    downloading: t('upd.downloading', u.latest, u.percent),
+    ready: firmwareBusy ? t('upd.busy') : t('upd.ready', u.latest),
+    error: t('upd.error', u.error || '?'),
+  }[u.phase];
+  $('#updText').textContent = text;
+  $('#updText').className = u.phase === 'error' ? 'status err' : 'muted';
+  const act = { idle: 'check', none: 'again', error: 'again', checking: 'checking', available: 'open', downloading: 'wait', ready: 'install' }[u.phase];
+  btn.textContent = act === 'checking' ? t('upd.check') : t('upd.' + act);
+  btn.className = 'btn' + (act === 'install' || act === 'open' ? ' primary' : '');
+  btn.disabled = act === 'checking' || act === 'wait' || (act === 'install' && firmwareBusy);
+  btn.dataset.act = act;
+}
+function bindUpdate() {
+  if (!window.aulaApp) return; // tarayıcıda çalışırken yok
+  window.aulaApp.onUpdate((s) => { S.upd = s; renderUpdate(); });
+  window.aulaApp.getUpdate().then((s) => { S.upd = s; renderUpdate(); });
+  $('#updAction').onclick = () => {
+    const act = $('#updAction').dataset.act;
+    if (act === 'check' || act === 'again') window.aulaApp.checkUpdate();
+    else if (act === 'open') window.aulaApp.openReleases();
+    else if (act === 'install' && !S.knobRun && !S.isp) window.aulaApp.installUpdate();
+  };
+}
+
 // ---------- genel ----------
 function fillRange(r) { r.style.setProperty('--fill', ((r.value - r.min) / (r.max - r.min)) * 100 + '%'); }
 document.addEventListener('input', (e) => { if (e.target.type === 'range') fillRange(e.target); });
@@ -693,6 +729,7 @@ function render() {
   $('#device').textContent = S.isp ? t('conn.isp') : S.config ? (S.t.kind === 'wired' ? t('conn.usb') : t('conn.rf')) : S.ispPending ? t('conn.ispGoing') : t('conn.none');
   $('#connect').hidden = !!S.config || !!S.isp || S.ispPending;
   renderBattery();
+  renderUpdate();
   if (S.config) {
     renderLight();
     renderSettings();
@@ -728,6 +765,7 @@ bindKnob();
 bindSettings();
 bindBackup();
 bindFirmware();
+bindUpdate();
 document.documentElement.lang = LANG;
 refreshLang();
 autoConnect().catch(() => {});
