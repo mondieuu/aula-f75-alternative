@@ -2,6 +2,7 @@
 // Tarayıcının cihaz seçme penceresi yerine AULA cihazlarını kendisi seçer.
 const { app, BrowserWindow, session, nativeTheme, shell } = require('electron');
 const path = require('path');
+const { initUpdater } = require('./updater');
 
 // Sadece bu cihazlara izin verilir: kablolu klavye, 2.4G alıcı, firmware yükleyicisi
 const ALLOWED = [0x258a, 0x3554, 0x0603];
@@ -52,6 +53,7 @@ if (!app.requestSingleInstanceLock()) {
     win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
     win.loadFile(PAGE);
     win.on('closed', () => { win = null; });
+    initUpdater(() => win);
   });
 
   app.on('window-all-closed', () => app.quit());

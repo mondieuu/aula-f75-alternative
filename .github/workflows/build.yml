@@ -1,0 +1,60 @@
+name: Windows build
+
+# Her push'ta Windows kurulum dosyasını derler.
+# main'de package.json'daki sürüm için henüz bir release yoksa, v<sürüm> release'ini
+# yayınlar; kurulu uygulamalar güncellemeyi buradan çeker.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Decide whether to publish a release
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          publish=never
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            if ! gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              publish=always
+            fi
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "version $version, publish: $publish"
+
+      - name: Build installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npx electron-builder --win --publish ${{ steps.plan.outputs.publish }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AULA-F75-Setup-${{ steps.plan.outputs.version }}
+          path: |
+            dist/*.exe
+            dist/latest.yml
+          if-no-files-found: error

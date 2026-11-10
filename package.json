@@ -6,12 +6,49 @@
   "main": "app/main.js",
   "private": true,
   "license": "MIT",
+  "author": "mondieuu",
   "repository": { "type": "git", "url": "https://github.com/mondieuu/aula-f75-alternative.git" },
   "keywords": ["aula", "f75", "keyboard", "webhid", "sinowealth", "rgb", "electron"],
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
-    "electron": "^45.2.3"
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "aula-f75-web",
+    "productName": "AULA F75",
+    "files": [
+      "app/**/*",
+      "*.js",
+      "index.html",
+      "style.css",
+      "package.json"
+    ],
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "app/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "artifactName": "AULA-F75-Setup.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mondieuu",
+        "repo": "aula-f75-alternative",
+        "releaseType": "release"
+      }
+    ]
   }
 }
