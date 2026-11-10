@@ -402,23 +402,36 @@ function bindKeys() {
 
 // ---------- tekerlek ----------
 const knobName = (v) => t('knob.' + v);
+const KNOB_STEPS = ['enter', 'read', 'write', 'boot'];
 function renderKnob() {
   if (!S.knobSel) S.knobSel = { ...(S.knob || { rotate: 'volume', press: 'mute' }) };
-  $$('#knobRotate button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.knobSel.rotate));
-  $$('#knobPress button').forEach((b) => b.classList.toggle('on', b.dataset.v === S.knobSel.press));
+  $$('#knobRotate button').forEach((b) => { b.classList.toggle('on', b.dataset.v === S.knobSel.rotate); b.disabled = !!S.knobRun; });
+  $$('#knobPress button').forEach((b) => { b.classList.toggle('on', b.dataset.v === S.knobSel.press); b.disabled = !!S.knobRun; });
   $('#knobNow').textContent = S.knob ? t('knob.on', knobName(S.knob.rotate), knobName(S.knob.press)) : t('knob.unknown');
   const same = S.knob && S.knob.rotate === S.knobSel.rotate && S.knob.press === S.knobSel.press;
-  $('#knobApply').disabled = S.busy || same || !S.t || S.t.kind !== 'wired';
+  const wired = S.t && S.t.kind === 'wired';
+  $('#knobApply').disabled = S.busy || !!S.knobRun || same || !wired;
+  $('#knobNote').textContent = S.knobRun ? t('knob.busy') : !wired ? t('knob.needCable') : same ? t('knob.same') : t('knob.ready');
   const fn = S.keymaps[1] && S.keymaps[1].subarray(84 * 4, 84 * 4 + 4);
   $('#knobFn').textContent = fn ? (label(fn) || t('knob.fnUnset')) : t('knob.fnWired');
 }
-function knobProgress(key, done, total, ...args) {
-  $('#knobProg').hidden = false;
-  $('#knobMsg').textContent = t(key, ...args);
-  const p = $('#knobProg progress');
-  p.max = total || 1;
-  p.value = done || 0;
+// Adım listesi: her adım bekliyor, sürüyor (run), bitti (done) ya da hata (err)
+function knobStep(step, state, done, total) {
+  $('#knobSteps').hidden = false;
+  const idx = KNOB_STEPS.indexOf(step);
+  $$('#knobSteps li').forEach((li, i) => {
+    li.className = i < idx ? 'done' : i === idx ? state : '';
+    li.querySelector('em').textContent = i === idx && state === 'run' && total ? Math.round((done / total) * 100) + '%' : '';
+  });
 }
+function knobResult(text, kind, opts = {}) {
+  $('#knobResult').hidden = !text;
+  $('#knobResult').className = 'result ' + (kind || '');
+  $('#knobMsg').textContent = text || '';
+  $('#knobPick').hidden = !opts.pick;
+  $('#knobDl').hidden = !S.knobBackup || !opts.dl;
+}
+const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
 async function ispSession(d) {
   S.isp = new IspDevice(d);
   await S.isp.open();
@@ -453,51 +466,83 @@ async function waitIsp(ms) {
   }
   return null;
 }
+async function waitKeyboard(ms) {
+  const t0 = Date.now();
+  while (!S.config && Date.now() - t0 < ms) { await autoConnect().catch(() => {}); if (!S.config) await wait(1000); }
+  return !!S.config;
+}
+function knobEnd() {
+  S.knobRun = null;
+  S.busy = false;
+  document.body.classList.remove('knob-run');
+  render();
+}
+// Yükleyiciye bağlandıktan sonrası tek akış: oku, yedekle, yaz, doğrula, yeniden başlat
 async function knobWrite(d) {
-  const sel = { ...S.knobSel };
+  const sel = S.knobRun;
+  let fw = null;
+  let step = 'read';
   try {
     await ispSession(d);
-    knobProgress('knob.reading', 0, 1);
-    const fw = await S.isp.readFirmware((i, n) => knobProgress('knob.reading', i, n));
+    knobResult('');
+    knobStep('read', 'run');
+    fw = await S.isp.readFirmware((i, n) => knobStep('read', 'run', i, n));
     if (!knobPatchable(fw)) throw new Error(t('knob.unknownFw'));
+    S.knobBackup = fw;
+    try { if (!localStorage.getItem('aulaFwOrig')) localStorage.setItem('aulaFwOrig', b64(fw)); } catch { /* yer yok */ }
+    step = 'write';
+    knobStep('write', 'run');
     const img = applyKnob(fw, sel.rotate, sel.press);
-    if (!img.every((v, i) => v === fw[i])) await S.isp.writeFirmware(img, (i, n) => knobProgress('knob.writing', i, n));
-    saveKnob(sel);
-    knobProgress('knob.rebooting', 1, 1);
+    if (!img.every((v, i) => v === fw[i])) await S.isp.writeFirmware(img, (i, n) => knobStep('write', 'run', i, n));
+    saveKnob({ rotate: sel.rotate, press: sel.press });
+    step = 'boot';
+    knobStep('boot', 'run');
     await ispFinish();
-    knobProgress('knob.done', 1, 1, knobName(sel.rotate), knobName(sel.press));
+    const ok = await waitKeyboard(10000);
+    $$('#knobSteps li').forEach((li) => { li.className = 'done'; li.querySelector('em').textContent = ''; });
+    knobResult(t(ok ? 'knob.doneTry' : 'knob.doneLater', knobName(sel.rotate), knobName(sel.press)), 'ok', { dl: true });
   } catch (e) {
     console.error(e);
-    $('#knobMsg').textContent = t('err', e.message);
-    if (S.isp) { await S.isp.reboot().catch(() => {}); await S.isp.close(); S.isp = null; document.body.classList.remove('isp'); await wait(3000); await autoConnect(); }
+    knobStep(step, 'err');
+    let msg = t('err', e.message);
+    if (S.isp && step === 'write' && fw) {
+      // Doğrulama tutmadı: okunan orijinali bir kez geri yaz
+      try { await S.isp.writeFirmware(fw); msg = t('knob.rolledBack'); } catch (e2) { console.error(e2); knobResult(t('knob.stuck'), 'err', { dl: true }); knobEnd(); return; }
+    }
+    if (S.isp) { await ispFinish().catch(() => {}); await waitKeyboard(10000); }
+    knobResult(msg, 'err', { dl: step !== 'read' });
   } finally {
-    S.busy = false;
-    $('#knobPick').hidden = true;
-    render();
+    if (S.knobRun) knobEnd();
   }
 }
 function bindKnob() {
-  $$('#knobRotate button').forEach((b) => (b.onclick = () => { S.knobSel.rotate = b.dataset.v; renderKnob(); }));
-  $$('#knobPress button').forEach((b) => (b.onclick = () => { S.knobSel.press = b.dataset.v; renderKnob(); }));
+  $$('#knobRotate button').forEach((b) => (b.onclick = () => { S.knobSel.rotate = b.dataset.v; knobResult(''); renderKnob(); }));
+  $$('#knobPress button').forEach((b) => (b.onclick = () => { S.knobSel.press = b.dataset.v; knobResult(''); renderKnob(); }));
   $('#knobApply').onclick = async () => {
-    if (S.busy) return;
+    if (S.busy || S.knobRun) return;
     S.busy = true;
+    S.knobRun = { ...S.knobSel };
+    S.knobBackup = null;
+    document.body.classList.add('knob-run');
+    knobResult('');
+    knobStep('enter', 'run');
     renderKnob();
     try {
-      knobProgress('knob.entering', 0, 1);
       const d = await enterIspFromKeyboard();
       if (d) return knobWrite(d);
-      knobProgress('knob.pickHelp', 0, 1);
-      $('#knobPick').hidden = false;
+      // Tarayıcıda yükleyici bir kez listeden seçilir (masaüstü uygulamasında gerekmez)
+      knobResult(t('knob.pickHelp'), '', { pick: true });
     } catch (e) {
-      $('#knobMsg').textContent = t('err', e.message);
-      S.busy = false;
-      renderKnob();
+      knobStep('enter', 'err');
+      knobResult(t('err', e.message), 'err');
+      knobEnd();
     }
   };
   $('#knobPick').onclick = () => {
-    requestIsp().then((d) => (d ? knobWrite(d) : null)).catch((e) => { $('#knobMsg').textContent = t('err', e.message); });
+    requestIsp().then((d) => (d ? knobWrite(d) : null)).catch((e) => knobResult(t('err', e.message), 'err', { pick: true }));
   };
+  $('#knobDl').onclick = () => S.knobBackup && download(S.knobBackup, 'BEFORE-' + fwName());
+  window.addEventListener('beforeunload', (e) => { if (S.knobRun && S.isp) { e.preventDefault(); e.returnValue = ''; } });
   $('#knobFnEdit').onclick = () => { S.layer = 1; S.selKey = F75.find((k) => k.knob); S.mods = 0; go('pKeys'); };
 }
 
@@ -674,7 +719,7 @@ if ('hid' in navigator) {
       setTimeout(() => autoConnect().catch(() => {}), 1500);
     }
   });
-  navigator.hid.addEventListener('connect', () => { if (!S.t && !S.isp && !S.ispPending) setTimeout(() => autoConnect().catch(() => {}), 800); });
+  navigator.hid.addEventListener('connect', () => { if (!S.t && !S.isp && !S.ispPending && !S.knobRun) setTimeout(() => autoConnect().catch(() => {}), 800); });
 }
 bindPrefs();
 bindLight();

@@ -84,7 +84,7 @@ Knob rotation is hard-wired in the keyboard firmware: no key code you assign can
 - **Track** changes the consumer codes the knob sends to next / previous track.
 - **Lighting** makes the knob call the same brightness routine that Fn + ↑ / ↓ uses.
 
-The patch is only offered when the firmware is recognized (AULA F75 V11). The written data is read back and compared before the keyboard is allowed to start it. If anything does not match, the keyboard stays in bootloader mode and you can write the original firmware back from the Firmware page. The bootloader itself is never written.
+It is one click: the app switches the keyboard to its bootloader, reads and backs up the current firmware, writes and verifies the patch, then restarts the keyboard and reconnects (about 10 seconds), showing each step as it goes. The patch is only offered when the firmware is recognized (AULA F75 V11). The written data is read back and compared before the keyboard is allowed to start it. If anything does not match, the keyboard stays in bootloader mode and you can write the original firmware back from the Firmware page. The bootloader itself is never written.
 
 > **Use the firmware features at your own risk.** Back up your firmware first (Firmware → Download firmware) and keep the USB cable plugged in while writing.
 
@@ -123,7 +123,7 @@ AULA’nın resmi yazılımı, arka planda yönetici olarak çalışan 2.6 MB’
 - **Işık:** 15 efekt ve kapalı, parlaklık, hız, renk ya da renkli mod. Ekrandaki klavye seçili efekti canlı oynatıyor; bastığın tuşlar ekranda da yanıyor.
 - **Tuş tuş renk:** Fırça, on hazır renk ya da istediğin renk.
 - **Tuş atama:** Dört katman (Normal, Fn, Fn2, Tap) ve tek bir aranabilir işlev listesi.
-- **Tekerlek:** Çevirme **ses**, **ışık parlaklığı** ya da **şarkı atlama**; basma sessiz ya da oynat/duraklat. Fn + basma istediğin işleve atanabiliyor.
+- **Tekerlek:** Çevirme **ses**, **ışık parlaklığı** ya da **şarkı atlama**; basma sessiz ya da oynat/duraklat. Fn + basma istediğin işleve atanabiliyor. Tek tıkla yedek alınır, yazılır, doğrulanır ve klavye yeniden başlar (yaklaşık 10 saniye); her adım ekranda görünür.
 - **Pil:** 2.4G modunda canlı yüzde ve şarj durumu.
 - **Ayarlar, yedek, firmware:** Tap, uyku, debounce, fabrika ayarları; ayar dosyası; firmware yedekleme ve geri yükleme.
 - **Görünüm:** Açık ve koyu tema; Türkçe ve İngilizce, Türkçe Q ve ABD tuş başlıklarıyla.

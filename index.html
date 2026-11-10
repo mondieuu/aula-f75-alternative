@@ -129,10 +129,19 @@
           <button data-v="play"><b data-i18n="knob.play"></b><span data-i18n="knob.playD"></span></button>
         </div>
         <div class="foot">
-          <p class="muted" data-i18n="knob.note"></p>
-          <div class="btns"><button id="knobPick" class="btn" hidden data-i18n="knob.pick"></button><button id="knobApply" class="btn primary" data-i18n="knob.write"></button></div>
+          <p class="muted" id="knobNote"></p>
+          <div class="btns"><button id="knobApply" class="btn primary" data-i18n="knob.write"></button></div>
         </div>
-        <div class="progress" id="knobProg" hidden><progress max="1" value="0"></progress><span id="knobMsg"></span></div>
+        <ol class="steps" id="knobSteps" hidden>
+          <li data-s="enter"><i></i><span data-i18n="knob.s.enter"></span><em></em></li>
+          <li data-s="read"><i></i><span data-i18n="knob.s.read"></span><em></em></li>
+          <li data-s="write"><i></i><span data-i18n="knob.s.write"></span><em></em></li>
+          <li data-s="boot"><i></i><span data-i18n="knob.s.boot"></span><em></em></li>
+        </ol>
+        <div class="result" id="knobResult" hidden>
+          <span id="knobMsg"></span>
+          <div class="btns"><button id="knobPick" class="btn primary" hidden data-i18n="knob.pick"></button><button id="knobDl" class="btn quiet" hidden data-i18n="knob.dl"></button></div>
+        </div>
       </div>
       <div class="panel bar">
         <div class="grow"><h2><kbd>Fn</kbd> + <span data-i18n="knob.press"></span></h2><p class="muted" id="knobFn"></p></div>
