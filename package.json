@@ -1,0 +1,17 @@
+{
+  "name": "aula-f75-alternative",
+  "productName": "AULA F75",
+  "version": "1.0.0",
+  "description": "Lightweight open-source alternative app for the AULA F75 keyboard: lighting, key remapping, knob modes, battery and firmware tools over WebHID",
+  "main": "app/main.js",
+  "private": true,
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/mondieuu/aula-f75-alternative.git" },
+  "keywords": ["aula", "f75", "keyboard", "webhid", "sinowealth", "rgb", "electron"],
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^45.2.3"
+  }
+}

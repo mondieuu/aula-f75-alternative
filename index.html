@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AULA F75</title>
+<script>
+  // Tema, sayfa çizilmeden önce uygulanır (yanıp sönme olmasın)
+  try { const th = localStorage.getItem('aulaTheme'); document.documentElement.dataset.theme = th || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch { document.documentElement.dataset.theme = 'light'; }
+</script>
+<link rel="icon" href="app/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></symbol>
+    <symbol id="i-knob" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="m5 4 10 8-10 8z"/><path d="M19 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">AULA F75</div>
+    <nav>
+      <button data-p="pLight" class="on"><svg><use href="#i-sun"/></svg><span data-i18n="nav.light"></span></button>
+      <button data-p="pKeys"><svg><use href="#i-keys"/></svg><span data-i18n="nav.keys"></span></button>
+      <button data-p="pKnob"><svg><use href="#i-knob"/></svg><span data-i18n="nav.knob"></span></button>
+      <button data-p="pSettings"><svg><use href="#i-sliders"/></svg><span data-i18n="nav.settings"></span></button>
+      <button data-p="pBackup"><svg><use href="#i-archive"/></svg><span data-i18n="nav.backup"></span></button>
+      <button data-p="pFirmware"><svg><use href="#i-cpu"/></svg><span data-i18n="nav.firmware"></span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="conn">
+        <div class="conn-line"><span class="dot"></span><span id="device"></span></div>
+        <div class="battery" id="battery" hidden></div>
+        <div id="status" class="status"></div>
+        <button id="connect" class="btn full" data-i18n="conn.connect"></button>
+      </div>
+      <div class="prefs">
+        <div class="seg small" id="langSeg"><button data-v="tr">TR</button><button data-v="en">EN</button></div>
+        <div class="seg small" id="themeSeg">
+          <button data-v="light"><svg><use href="#i-sun"/></svg><span data-i18n="theme.light"></span></button>
+          <button data-v="dark"><svg><use href="#i-moon"/></svg><span data-i18n="theme.dark"></span></button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="head">
+      <h1 id="title"></h1>
+      <p id="subtitle" class="sub"></p>
+    </header>
+
+    <section class="stage" id="stage" hidden>
+      <div class="case"><div class="plate"><div id="board" class="board"></div></div></div>
+      <div class="brush" id="customPanel" hidden>
+        <span class="brush-label" data-i18n="light.brush"></span>
+        <div class="swatches" id="swatches"></div>
+        <label class="swatch picker" data-i18n-title="light.custom"><input id="paintColor" type="color" value="#7c82d6"></label>
+        <span class="brush-sep"></span>
+        <button id="fillAll" class="btn" data-i18n="light.fill"></button>
+        <button id="clearAll" class="btn quiet" data-i18n="light.clear"></button>
+      </div>
+      <p id="stageHint" class="hint"></p>
+    </section>
+
+    <div id="intro" class="empty">
+      <p data-i18n="intro.1"></p>
+      <p class="muted" data-i18n="intro.2"></p>
+    </div>
+
+    <section id="pLight" class="page">
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="light.effect"></h2><span id="effDesc" class="muted"></span></div>
+        <div id="effects" class="tiles"></div>
+        <div class="controls" id="lightControls">
+          <div class="ctl"><div class="ctl-head"><label for="bright" data-i18n="light.brightness"></label><output id="brightVal"></output></div><input id="bright" type="range" min="0" max="9"></div>
+          <div class="ctl" id="speedRow"><div class="ctl-head"><label for="speed" data-i18n="light.speed"></label><output id="speedVal"></output></div><input id="speed" type="range" min="0" max="4"></div>
+          <div class="ctl" id="colorRow"><div class="ctl-head"><label for="effColor" data-i18n="light.color"></label></div>
+            <div class="ctl-row"><input id="effColor" type="color"><label class="switch"><input id="colorful" type="checkbox"><span data-i18n="light.colorful"></span></label></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pKeys" class="page" hidden>
+      <div id="keysOff" class="empty" hidden data-i18n="keys.wiredOnly"></div>
+      <div id="keysOn">
+        <div class="panel bar">
+          <div class="seg" id="layers"><button data-l="0" data-i18n="keys.normal"></button><button data-l="1">Fn</button><button data-l="2">Fn2</button><button data-l="3">Tap</button></div>
+          <button id="aResetLayer" class="btn quiet"><svg><use href="#i-undo"/></svg><span data-i18n="keys.resetLayer"></span></button>
+        </div>
+        <div class="panel" id="assign" hidden>
+          <div class="panel-head top">
+            <div class="grow"><h2 id="assignTitle"></h2><p id="assignCur" class="muted"></p></div>
+            <button id="aReset" class="btn quiet"><svg><use href="#i-undo"/></svg><span data-i18n="keys.default"></span></button>
+          </div>
+          <div class="picker-tools">
+            <div class="mods" id="aMods"></div>
+            <label class="search"><svg><use href="#i-search"/></svg><input id="aSearch" type="search" data-i18n-ph="keys.search"></label>
+          </div>
+          <div id="aList" class="fn-list"></div>
+        </div>
+        <p id="keysHint" class="muted gap-top" data-i18n="keys.hint"></p>
+      </div>
+    </section>
+
+    <section id="pKnob" class="page" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="knob.rotate"></h2><span id="knobNow" class="muted"></span></div>
+        <div class="options three" id="knobRotate">
+          <button data-v="volume"><svg><use href="#i-vol"/></svg><b data-i18n="knob.volume"></b><span data-i18n="knob.volumeD"></span></button>
+          <button data-v="light"><svg><use href="#i-sun"/></svg><b data-i18n="knob.light"></b><span data-i18n="knob.lightD"></span></button>
+          <button data-v="track"><svg><use href="#i-skip"/></svg><b data-i18n="knob.track"></b><span data-i18n="knob.trackD"></span></button>
+        </div>
+        <h2 class="gap-top" data-i18n="knob.press"></h2>
+        <div class="options two" id="knobPress">
+          <button data-v="mute"><b data-i18n="knob.mute"></b><span data-i18n="knob.muteD"></span></button>
+          <button data-v="play"><b data-i18n="knob.play"></b><span data-i18n="knob.playD"></span></button>
+        </div>
+        <div class="foot">
+          <p class="muted" data-i18n="knob.note"></p>
+          <div class="btns"><button id="knobPick" class="btn" hidden data-i18n="knob.pick"></button><button id="knobApply" class="btn primary" data-i18n="knob.write"></button></div>
+        </div>
+        <div class="progress" id="knobProg" hidden><progress max="1" value="0"></progress><span id="knobMsg"></span></div>
+      </div>
+      <div class="panel bar">
+        <div class="grow"><h2><kbd>Fn</kbd> + <span data-i18n="knob.press"></span></h2><p class="muted" id="knobFn"></p></div>
+        <button id="knobFnEdit" class="btn" data-i18n="knob.change"></button>
+      </div>
+    </section>
+
+    <section id="pSettings" class="page" hidden>
+      <div class="panel list">
+        <div class="item">
+          <div class="item-text"><h2 data-i18n="set.tap"></h2><p class="muted" data-i18n="set.tapHelp"></p></div>
+          <label class="switch"><input id="tapOn" type="checkbox" aria-label="Tap"></label>
+        </div>
+        <div class="item sub" id="tapRow">
+          <div class="item-text"><h2 data-i18n="set.sens"></h2></div>
+          <div class="ctl-row"><input id="tapSens" type="range" min="10" max="127"><output id="tapVal"></output></div>
+        </div>
+        <div class="item">
+          <div class="item-text"><h2 data-i18n="set.sleep"></h2><p class="muted" data-i18n="set.sleepHelp"></p></div>
+          <select id="sleep" aria-label="sleep"></select>
+        </div>
+        <div class="item">
+          <div class="item-text"><h2 data-i18n="set.debounce"></h2><p class="muted" data-i18n="set.debounceHelp"></p></div>
+          <div class="ctl-row"><input id="debounce" type="range" min="0" max="4"><output id="debounceVal"></output></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="set.device"></h2>
+        <dl class="facts"><dt data-i18n="set.model"></dt><dd>AULA F75</dd><dt data-i18n="set.link"></dt><dd id="infoLink"></dd><dt data-i18n="set.id"></dt><dd id="infoId" class="mono"></dd><dt data-i18n="bat.title"></dt><dd id="infoBat"></dd>
+          <dt>Firmware</dt><dd>V11.0.0 <span class="muted" data-i18n="set.fwNote"></span></dd></dl>
+      </div>
+      <div class="panel bar">
+        <div class="grow"><h2 data-i18n="set.factory"></h2><p class="muted" data-i18n="set.factoryHelp"></p></div>
+        <button id="defaults" class="btn danger" data-i18n="set.reset"></button>
+      </div>
+    </section>
+
+    <section id="pBackup" class="page" hidden>
+      <div class="panel bar">
+        <div class="grow"><h2 data-i18n="bk.file"></h2><p class="muted" data-i18n="bk.help"></p></div>
+        <div class="btns"><button id="export" class="btn" data-i18n="bk.save"></button>
+          <label class="btn"><span data-i18n="bk.load"></span><input id="importFile" type="file" accept=".json" hidden></label></div>
+      </div>
+    </section>
+
+    <section id="pFirmware" class="page" hidden>
+      <div class="panel note" data-i18n="fw.note"></div>
+      <div class="panel bar" id="fwStep1">
+        <div class="grow"><h2 data-i18n="fw.mode"></h2><p class="muted" data-i18n="fw.modeHelp"></p></div>
+        <div class="btns"><button id="fwConnect" class="btn" data-i18n="fw.connect"></button><button id="fwEnter" class="btn primary" data-i18n="fw.enter"></button></div>
+      </div>
+      <div id="fwStep2" hidden>
+        <div class="panel bar">
+          <div class="grow"><h2 data-i18n="fw.backup"></h2><p id="fwInfo" class="muted"></p></div>
+          <button id="fwBackup" class="btn" data-i18n="fw.download"></button>
+        </div>
+        <div class="panel bar">
+          <div class="grow"><h2 data-i18n="fw.fromFile"></h2><p class="muted" data-i18n="fw.fileHelp"></p></div>
+          <label class="btn"><span data-i18n="fw.pick"></span><input id="fwFile" type="file" accept=".bin" hidden></label>
+        </div>
+        <div class="panel bar">
+          <div class="grow"><h2 data-i18n="fw.finish"></h2><p class="muted" data-i18n="fw.finishHelp"></p></div>
+          <button id="fwReboot" class="btn primary" data-i18n="fw.reboot"></button>
+        </div>
+      </div>
+      <div class="progress"><progress id="fwProg" max="1" value="0" hidden></progress><span id="fwMsg"></span></div>
+    </section>
+  </main>
+</div>
+
+<script src="i18n.js"></script>
+<script src="layout.js"></script>
+<script src="model.js"></script>
+<script src="protocol.js"></script>
+<script src="firmware.js"></script>
+<script src="effects.js"></script>
+<script src="battery.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
