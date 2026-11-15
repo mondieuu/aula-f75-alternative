@@ -33,16 +33,23 @@ const cfg = {
   valid: (c) => c.length === 128 && c[126] === 0x5a && c[127] === 0xa5,
 };
 
+// Renk dengesi: F75'in LED'lerinde kırmızı ve mavi, yeşile göre güçlü; 255,255,255 morumsu
+// yanar. Gerçek klavyede en temiz beyaz 190,255,160 çıktı. Ekrandaki renk klavyeye bu
+// oranlarla gider, klavyeden okunan değer geri çevrilir.
+const LED_BALANCE = [190 / 255, 1, 160 / 255];
+const toLed = (rgb) => rgb.map((v, i) => Math.round(v * LED_BALANCE[i]));
+const fromLed = (rgb) => rgb.map((v, i) => Math.min(255, Math.round(v / LED_BALANCE[i])));
+
 // Palet: her efekt için 7 renk x RGB = 21 bayt, efekt numarası x 21 adresinde.
 const palette = {
-  get(p, id) { const o = id * 21; return [p[o], p[o + 1], p[o + 2]]; },
-  set(p, id, rgb) { p.set(rgb, id * 21); },
+  get(p, id) { const o = id * 21; return fromLed([p[o], p[o + 1], p[o + 2]]); },
+  set(p, id, rgb) { p.set(toLed(rgb), id * 21); },
 };
 
-// Tuş başına renk: R, G, B düzlemleri, her biri 126 bayt.
+// Tuş başına renk: R, G, B düzlemleri, her biri 126 bayt (resmi uygulamanın trafiğiyle doğrulandı).
 const keyColors = {
-  get: (k, i) => [k[i], k[126 + i], k[252 + i]],
-  set(k, i, [r, g, b]) { k[i] = r; k[126 + i] = g; k[252 + i] = b; },
+  get: (k, i) => fromLed([k[i], k[126 + i], k[252 + i]]),
+  set(k, i, rgb) { const [r, g, b] = toLed(rgb); k[i] = r; k[126 + i] = g; k[252 + i] = b; },
 };
 
 const hex2rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));

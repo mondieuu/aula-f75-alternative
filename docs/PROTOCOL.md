@@ -24,6 +24,12 @@ Fabrika sıfırlaması ayrı bir komut değil: AULA programı varsayılan tuş h
 Ayar bloğu: `[3]` debounce 0–4, `[9]` özel renk modu, `[10]` efekt, `[22]` Tap (0 = kapalı, açıkken hassasiyet 10–127), `[24]` uyku (×30 sn, 0 = kapalı),
 `0x3a + 2×(efekt−1)`: parlaklık 0–9, sonraki bayt `hız<<4 | renk yuvası` (7 = renkli).
 
+Tuş renkleri (`06`): R `[i]`, G `[126+i]`, B `[252+i]`, `i` tuşun matris sırası (resmi programın USB trafiğiyle doğrulandı).
+512 bayt okununca `378+i`'de dördüncü bir düzlem görünür: fabrikada WASD ve yön tuşları `ff` (KB.ini `GaoshouKey`), program buna yazmıyor.
+LED renk dengesi: 255,255,255 morumsu yanar; gerçek klavyede en temiz beyaz 190,255,160. Uygulama ekrandaki rengi
+bu oranlarla (R ×0.745, B ×0.627) yazar ve okurken geri çevirir (`model.js`, `LED_BALANCE`).
+Tek tek tuşların LED'leri arasında da fark olabilir: aynı veriyle (sabit efektte de) bazı tuşların mavisi sönük kalabiliyor.
+
 Ses tekerleği matris sırası 84. Normal katmanda `0700001D` iken firmware çevirmeyi ses aç/kıs, basmayı sessiz yapar.
 Başka kod atanırsa basma o kodu gönderir ama çevirme hiç çalışmaz (dönüş ayrı bir matris tuşu değil).
 FN katmanında (katman 1) sıra 84 serbestçe atanır: FN + basma. Test edildi.

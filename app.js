@@ -183,8 +183,24 @@ function renderBoard() {
         d.title = (main || k.n) + ' · ' + (on ? rgb2hex(c).toUpperCase() : t('light.off'));
       };
       paint(keyColors.get(S.colors, k.i));
-      const apply = () => { const c = hex2rgb(S.paint); keyColors.set(S.colors, k.i, c); paint(c); led.kick(); };
-      d.onpointerdown = (e) => { e.preventDefault(); S.painting = true; apply(); };
+      // Tıklama aç/kapa: tuş zaten fırçanın renginde yanıyorsa söner, değilse o renkte yanar.
+      // Sürüklerken ilk tuştaki işlem (yak ya da söndür) diğer tuşlara da uygulanır.
+      const raw = () => [S.colors[k.i], S.colors[126 + k.i], S.colors[252 + k.i]];
+      const apply = () => {
+        const c = S.paintAction === 'off' ? [0, 0, 0] : hex2rgb(S.paint);
+        keyColors.set(S.colors, k.i, c);
+        paint(keyColors.get(S.colors, k.i));
+        led.kick();
+      };
+      d.onpointerdown = (e) => {
+        e.preventDefault();
+        const brush = toLed(hex2rgb(S.paint));
+        const cur = raw();
+        const lit = cur.some((v) => v);
+        S.paintAction = brush.every((v) => !v) || (lit && cur.every((v, j) => v === brush[j])) ? 'off' : 'on';
+        S.painting = true;
+        apply();
+      };
       d.onpointerenter = () => S.painting && apply();
     } else if (mode === 'keys' && S.keymaps[S.layer]) {
       const b = S.keymaps[S.layer].subarray(k.i * 4, k.i * 4 + 4);
@@ -256,9 +272,12 @@ function renderLight() {
     b.className = e.id === eff ? 'on' : '';
     b.onclick = () => {
       if (e.id === CUSTOM_EFFECT && !S.colors) return setStatus('task.customWired', 'err');
+      // Özel (tuş tuş) moda geçince bütün ışıklar kapalı başlar; tuşlar uygulamadan tek tek yakılır
+      const toCustom = e.id === CUSTOM_EFFECT && cfg.effect(S.config) !== CUSTOM_EFFECT;
+      if (toCustom) S.colors.fill(0);
       cfg.setEffect(S.config, e.id);
       render();
-      run('task.effect', () => S.t.writeConfig(S.config));
+      run('task.effect', async () => { if (toCustom) await S.t.writeColors(S.colors); await S.t.writeConfig(S.config); });
     };
     $('#effects').append(b);
   }
